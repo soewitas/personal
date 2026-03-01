@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Massage Tracker</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .counter-box { background: #2c3e50; color: white; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; width: 100%; max-width: 500px; }
+        .counter-number { font-size: 2.5rem; font-weight: bold; color: #2ecc71; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 500px; margin-bottom: 20px; }
+        h2 { color: #2c3e50; margin-top: 0; font-size: 1.2rem; }
+        label { display: block; margin: 12px 0 5px; font-weight: bold; font-size: 0.9rem; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { cursor: pointer; border: none; border-radius: 4px; transition: 0.2s; font-weight: bold; }
+        .btn-add { width: 100%; padding: 12px; background-color: #27ae60; color: white; margin-top: 20px; font-size: 16px; }
+        .btn-add:hover { background-color: #219150; }
+        table { width: 100%; max-width: 700px; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.95rem; }
+        th { background-color: #2c3e50; color: white; }
+        .actions { display: flex; gap: 5px; }
+        .edit-btn { background: #f39c12; color: white; padding: 6px 10px; }
+        .delete-btn { background: #e74c3c; color: white; padding: 6px 10px; }
+        .reset-btn { margin-top: 20px; background: transparent; color: #7f8c8d; text-decoration: underline; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div class="counter-box">
+    <div>Sessions Remaining</div>
+    <div class="counter-number" id="sessionCounter">10</div>
+</div>
+
+<div class="card">
+    <h2>Log Appointment</h2>
+    <input type="hidden" id="editIndex">
+    
+    <label>Date</label>
+    <input type="date" id="date">
+
+    <label>Family Member</label>
+    <select id="familyMember">
+        <option value="Agus">Agus</option>
+        <option value="Shirley">Shirley</option>
+        <option value="Madeline">Madeline</option>
+        <option value="Colin">Colin</option>
+    </select>
+
+    <label>Therapist (Max 15 chars)</label>
+    <input type="text" id="therapist" maxlength="15" placeholder="e.g. Maria">
+
+    <button id="mainBtn" class="btn-add" onclick="saveRecord()">Add Record</button>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Name</th>
+            <th>Therapist</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+</table>
+
+<button class="reset-btn" onclick="resetAll()">Reset Counter to 10</button>
+
+<script>
+    let records = JSON.parse(localStorage.getItem('massageRecords')) || [];
+    const STARTING_SESSIONS = 10;
+
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        
+        records.forEach((record, index) => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td>${record.date}</td>
+                <td>${record.name}</td>
+                <td>${record.therapist}</td>
+                <td class="actions">
+                    <button class="edit-btn" onclick="editRecord(${index})">Edit</button>
+                    <button class="delete-btn" onclick="deleteRecord(${index})">Delete</button>
+                </td>
+            `;
+        });
+
+        const remaining = STARTING_SESSIONS - records.length;
+        const counterEl = document.getElementById('sessionCounter');
+        counterEl.innerText = remaining;
+        counterEl.style.color = remaining <= 2 ? "#e74c3c" : "#2ecc71";
+
+        localStorage.setItem('massageRecords', JSON.stringify(records));
+    }
+
+    function saveRecord() {
+        const date = document.getElementById('date').value;
+        const name = document.getElementById('familyMember').value;
+        const therapist = document.getElementById('therapist').value;
+        const editIndex = document.getElementById('editIndex').value;
+
+        if (!date) return alert("Please select a date");
+
+        const data = { date, name, therapist };
+
+        if (editIndex === "") {
+            records.push(data);
+        } else {
+            records[editIndex] = data;
+            document.getElementById('editIndex').value = "";
+            document.getElementById('mainBtn').innerText = "Add Record";
+            document.getElementById('mainBtn').style.backgroundColor = "#27ae60";
+        }
+
+        clearForm();
+        renderTable();
+    }
+
+    function editRecord(index) {
+        const record = records[index];
+        document.getElementById('date').value = record.date;
+        document.getElementById('familyMember').value = record.name;
+        document.getElementById('therapist').value = record.therapist;
+        document.getElementById('editIndex').value = index;
+        
+        const btn = document.getElementById('mainBtn');
+        btn.innerText = "Update Record";
+        btn.style.backgroundColor = "#f39c12";
+        window.scrollTo(0,0);
+    }
+
+    function deleteRecord(index) {
+        if (confirm("Delete this record?")) {
+            records.splice(index, 1);
+            renderTable();
+        }
+    }
+
+    function resetAll() {
+        if (confirm("Reset everything? This will clear all records and set the counter back to 10.")) {
+            records = [];
+            renderTable();
+        }
+    }
+
+    function clearForm() {
+        document.getElementById('date').value = '';
+        document.getElementById('therapist').value = '';
+    }
+
+    renderTable();
+</script>
+
+</body>
+</html>
